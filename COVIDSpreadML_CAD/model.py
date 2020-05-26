@@ -12,6 +12,7 @@ import csv
 import matplotlib.pyplot as plt
 import pdb
 import warnings
+import statsmodels.tsa as tsa
 
 import dataload
 
@@ -180,7 +181,8 @@ def train_and_test_model(feature_vectors, featureNames, labels,
                          feature_vectors_last_date, labels_last_date,
                          feature_vectors_future,
                          obj_fun_type,
-                         predictions_output_filename
+                         predictions_output_filename,
+                         classifier_fct
                          ):
   """
   Trains the model and outputs predictions. See the 'run' function for description and reasonable default values
@@ -191,13 +193,14 @@ def train_and_test_model(feature_vectors, featureNames, labels,
   :param feature_vectors_future:
   :param obj_fun_type:
   :param predictions_output_filename:
+  :paranm classifier_fct:
   :return:
   """
   # classifier = RandomForestRegressor(n_estimators=500)
   
 
   ### DT EDIT ###
-  classifier = RandomForestRegressor(n_estimators=500, oob_score = True)
+  classifier = classifier_fct(n_estimators=500, oob_score = True)
 
 
 
@@ -376,6 +379,11 @@ def run():
       start_prediction_date,
       last_prediction_date
     )
+
+
+  
+
+  classifier_fct = RandomForestRegressor
   #train the model and output the predictions
   featureImportance = train_and_test_model(feature_vectors, featureNames,
                        labels,
@@ -383,7 +391,8 @@ def run():
                        labels_last_date,
                        feature_vectors_future,
                        obj_fun_type,
-                       predictions_output_filename)
+                       predictions_output_filename,
+                       classifier_fct)
 
 
   # permutation importance
