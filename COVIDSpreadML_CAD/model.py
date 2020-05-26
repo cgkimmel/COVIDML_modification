@@ -36,37 +36,36 @@ class FeaturesData:
         self.race_df, \
         self.employment_df = dataload.get_all_datasets()
   
-  def get_feature_vector(self, county, current_date, lookback_date):
-    features = []
+  	def get_feature_vector(self, county, current_date, lookback_date):
+  		features = []
+	    ### DT EDIT ###
+		features += self.census_df.loc[county, 'Population':].to_list()
+		featureNames = list(self.census_df.columns)
+	    #features += self.hospitals_df.loc[county, lookback_date:current_date].to_list()
+		features += self.education_df.loc[county, :].to_list()  # use all features (not time-based)
+		featureNames += list(self.education_df.columns)
+		features += self.employment_df.loc[county, :].to_list()  # use all features (not time-based)
+		featureNames += list(self.employment_df.columns)
+		features += self.race_df.loc[county, :].to_list()  # use all features (not time-based)
+		featureNames += list(self.race_df.columns)
+		features += self.unacast_distance_dff.loc[county, lookback_date:current_date].to_list()
+		features += self.unacast_visitation_dff.loc[county, lookback_date:current_date].to_list()
+		features += self.deaths_df.loc[county, lookback_date:current_date].to_list()
+		features += self.positive_tests_df.loc[county, lookback_date:current_date].to_list()
+		features += self.negative_tests_df.loc[county, lookback_date:current_date].to_list()
+		dates = list(self.deaths_df.loc[county, lookback_date:current_date].axes[0])
 
-    ### DT EDIT ###
-    features += self.census_df.loc[county, 'Population':].to_list()
-    featureNames = list(self.census_df.columns)
-    #features += self.hospitals_df.loc[county, lookback_date:current_date].to_list()
-    features += self.education_df.loc[county, :].to_list()  # use all features (not time-based)
-    featureNames += list(self.education_df.columns)
-    features += self.employment_df.loc[county, :].to_list()  # use all features (not time-based)
-    featureNames += list(self.employment_df.columns)
-    features += self.race_df.loc[county, :].to_list()  # use all features (not time-based)
-    featureNames += list(self.race_df.columns)
-    features += self.unacast_distance_dff.loc[county, lookback_date:current_date].to_list()
-    features += self.unacast_visitation_dff.loc[county, lookback_date:current_date].to_list()
-    features += self.deaths_df.loc[county, lookback_date:current_date].to_list()
-    features += self.positive_tests_df.loc[county, lookback_date:current_date].to_list()
-    features += self.negative_tests_df.loc[county, lookback_date:current_date].to_list()
-    dates = list(self.deaths_df.loc[county, lookback_date:current_date].axes[0])
+		features += self.cuebiqMI.loc[county, lookback_date:current_date].to_list()
 
-    features += self.cuebiqMI.loc[county, lookback_date:current_date].to_list()
+		features += self.unacast_total.loc[county, lookback_date:current_date].to_list()
+	    #features += self.distance_traveled.loc[county, lookback_date:current_date].to_list()
+		features += self.confirmed_cases_df.loc[county, lookback_date:current_date].to_list()
 
-    features += self.unacast_total.loc[county, lookback_date:current_date].to_list()
-    #features += self.distance_traveled.loc[county, lookback_date:current_date].to_list()
-    features += self.confirmed_cases_df.loc[county, lookback_date:current_date].to_list()
-
-    featLabel = ['unacast_distance ','unacast_visitation ','deaths_df ', 'positive_tests_df ', 'negative_tests_df ','cuebiq_MI ' ,'unacast_total ', 'confirmed_cases_df ']
-    for i in range(len(featLabel)):
-      for date in dates:
-        featureNames.append(featLabel[i] + str(date))
-    return features, np.array(featureNames)
+		featLabel = ['unacast_distance ','unacast_visitation ','deaths_df ', 'positive_tests_df ', 'negative_tests_df ','cuebiq_MI ' ,'unacast_total ', 'confirmed_cases_df ']
+		for i in range(len(featLabel)):
+			for date in dates:
+				featureNames.append(featLabel[i] + str(date))
+		return features, np.array(featureNames)
 
 def build_training_dataset(
         days_of_history,
@@ -74,53 +73,52 @@ def build_training_dataset(
         obj_fun_type,
         start_prediction_date,
         last_prediction_date):
-  """
-  Builds the feature vectors and labels for training. See the 'run' function for description and reasonable default values
-  :param days_of_history:
-  :param future_prediction_days:
-  :param obj_fun_type:
-  :param start_prediction_date:
-  :param last_prediction_date:
-  :return:
-  """
-
-    assert(obj_fun_type in ['log', 'linear', 'log_relative_change'])
-    assert(start_prediction_date < last_prediction_date)
+  	"""
+  	Builds the feature vectors and labels for training. See the 'run' function for description and reasonable default values
+  	:param days_of_history:
+  	:param future_prediction_days:
+  	:param obj_fun_type:
+  	:param start_prediction_date:
+  	:param last_prediction_date:
+  	:return:
+  	"""
+	assert(obj_fun_type in ['log', 'linear', 'log_relative_change'])
+	assert(start_prediction_date < last_prediction_date)
   
   
-    import warnings
-    warnings.simplefilter('error')
+	import warnings
+	warnings.simplefilter('error')
 
-    fd = FeaturesData()
-    print('data for features loaded')
+	fd = FeaturesData()
+	print('data for features loaded')
   
-    feature_vectors = []
-    labels = []
+	feature_vectors = []
+	labels = []
 
-    feature_vectors_last_date = {}
-    labels_last_date = {}
+	feature_vectors_last_date = {}
+	labels_last_date = {}
 
-    feature_vectors_future = {}
+	feature_vectors_future = {}
 
-  for county, county_data in fd.confirmed_cases_df.loc[:, start_prediction_date:last_prediction_date + timedelta(days=1)].iterrows():
-    for prediction_date, val in county_data.iteritems():
-      current_date = prediction_date - timedelta(days=future_prediction_days)
-      lookback_date = current_date - timedelta(days=days_of_history)
-      if fd.confirmed_cases_df.loc[county, current_date] >= 7:
+	for county, county_data in fd.confirmed_cases_df.loc[:, start_prediction_date:last_prediction_date + timedelta(days=1)].iterrows():
+		for prediction_date, val in county_data.iteritems():
+			current_date = prediction_date - timedelta(days=future_prediction_days)
+			lookback_date = current_date - timedelta(days=days_of_history)
+			if fd.confirmed_cases_df.loc[county, current_date] >= 7:
         ### DT EDIT ###
-        features, featureNames = fd.get_feature_vector(county, current_date, lookback_date)
-        if prediction_date == last_prediction_date:
-          feature_vectors_last_date[(county, prediction_date)] = features
-          labels_last_date[(county, prediction_date)] = fd.confirmed_cases_df.loc[county, prediction_date]
-        else:
-          feature_vectors.append(features)
-          if obj_fun_type == 'log':
-            labels.append(np.log(1.0 + fd.confirmed_cases_df.loc[county, prediction_date]))
-          elif obj_fun_type =='linear':
-            labels.append(fd.confirmed_cases_df.loc[county, prediction_date])
-          else:
-            rel_increase = np.log(fd.confirmed_cases_df.loc[county, prediction_date]) - np.log(features[-1])
-            labels.append(rel_increase)
+				features, featureNames = fd.get_feature_vector(county, current_date, lookback_date)
+			if prediction_date == last_prediction_date:
+				feature_vectors_last_date[(county, prediction_date)] = features
+				labels_last_date[(county, prediction_date)] = fd.confirmed_cases_df.loc[county, prediction_date]
+			else:
+				feature_vectors.append(features)
+			if obj_fun_type == 'log':
+				labels.append(np.log(1.0 + fd.confirmed_cases_df.loc[county, prediction_date]))
+			elif obj_fun_type =='linear':
+				labels.append(fd.confirmed_cases_df.loc[county, prediction_date])
+			else:
+				rel_increase = np.log(fd.confirmed_cases_df.loc[county, prediction_date]) - np.log(features[-1])
+				labels.append(rel_increase)
 
     if fd.confirmed_cases_df.loc[county, last_prediction_date] >= 7:
       lookback_date = last_prediction_date - timedelta(days=days_of_history)
@@ -129,9 +127,9 @@ def build_training_dataset(
         feature_vectors_future[(county, last_prediction_date + timedelta(days=future_prediction_days))] = \
           features
         
-      except:
-        print('ERROR in building features for forward prediction')
-        pass
+		except:
+			print('ERROR in building features for forward prediction')
+			pass
   
   print('Number of training examples=', len(feature_vectors))
   print('Number of testing examples on most recent date=', len(feature_vectors_last_date))
