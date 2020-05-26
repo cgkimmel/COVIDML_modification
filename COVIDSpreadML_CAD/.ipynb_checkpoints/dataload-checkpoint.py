@@ -281,7 +281,7 @@ def get_all_datasets():
   Loads the various datasets from local disk and returns them as Pandas DataFrames. For the time-based datasets, the rows
   are counties (the row index being the county ID, commonly referred to as countyFIPS), and the columns dates
    For non-time based datasets, the rows are counties and the columns are variable names
-  :return: (tuple of DataFrames)
+  :return:
        confirmed_cases_df: the number of covid cases per county over time
        deaths_df: the number of covid-related deaths per county over time
        positive_tests_df: the number of positive tests state-wide for each county over time
